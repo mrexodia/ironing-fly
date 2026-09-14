@@ -1,0 +1,11 @@
+{
+  "seed": 42,
+  "fabric": "cotton",
+  "garment": "shirt",
+  "temperature": 170,
+  "controller": "real",
+  "stimulus_hz": 150,
+  "weight_scale": 4,
+  "cutoff": 5,
+  "background_hz": 0
+}
