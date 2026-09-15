@@ -16,6 +16,8 @@ Open **http://127.0.0.1:5173/**. The launcher installs missing frontend dependen
 
 Press **Run experiment**. Pause or export at any time. Change a setting, then **Apply settings & reset**. Changes to neural settings fit and cache a new readout, which can take tens of seconds; fabric, temperature, garment and seed changes reuse it. The same seed and settings reproduce the episode. Each session is limited to five simulated minutes.
 
+The default **3D scene** shows a little fly in an apron pushing an iron over a padded ironing board. Drag to orbit, scroll/pinch to zoom, or use the camera buttons. The iron position, garment mask, raised wrinkles, temperature colors and scorch come from the existing 2D simulation. Fly limbs and wings are illustrative animation. Switch to **2D map** for the original overhead view; browsers without WebGL automatically use that view. Switching views or moving the camera does not reset or advance the experiment.
+
 **Human control:** select it, apply, run, then use the on-screen arrows or keyboard arrows with focus outside a form control. Toggle pressure and steam separately. **Compare DNa02 with baseline** runs a separate one-second neural experiment at the selected neural settings. Export that comparison or the complete ironing episode as JSON.
 
 ## Reproduce and verify

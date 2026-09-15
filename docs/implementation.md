@@ -40,6 +40,12 @@ Adopted the separation of neural vs world measurements, deterministic control-st
 
 ## Operation
 
+### 3D presentation
+
+`web/app/ironing-scene.ts` builds a local Three.js scene with a padded board, folding legs, cartoon fly, elliptical iron sole and deforming garment mesh. The scene is lazy-loaded on the client. The cloth uses the backend mask and per-cell wrinkle height, temperature and scorch; the sole follows the same unit-board position and pressure-dependent lift. Fly feet, wings, face and apron are stylized presentation, not added physiology or physics. Their motion is tied to simulation time. Camera interpolation only smooths presentation and never sends simulation actions.
+
+Orbit/zoom/reset work independently of the simulation, including accessible camera buttons and keyboard controls on the focused canvas. Pixel density is capped at 2, rendering at 40 fps, and background tabs skip rendering. Geometry/materials, WebGL resources, camera handlers and resize observation are released on unmount. A missing/lost WebGL context falls back to the original 2D canvas. The user can explicitly switch between 3D and 2D without resetting the experiment. Three.js is bundled locally; there are no remote models or texture dependencies. The 3D addition passes TypeScript/application lint/build; browser rendering remains unverified because no browser is exposed to automation.
+
 The API binds only localhost, validates inputs, bounds request steps and episode duration, and keeps at most 16 sessions. A cached/default model starts immediately; new neural settings require fitting. Bundled default readouts are keyed by the entire extracted circuit and neural configuration. Local model caches and raw downloads are ignored by Git.
 
 The Sites skills were used for the frontend scaffold, UI primitives, local preview and production-build workflow. The guide's requested deliverable is a local preview: there is no hosting deployment or external publication. Browser automation reported no available browser, so visual interaction QA remains unverified; HTTP/API, model tests, type checks, lint and production build are the available verification.

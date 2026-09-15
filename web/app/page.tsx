@@ -11,6 +11,8 @@ import {
   Settings2,
   FlaskConical,
   ChevronRight,
+  Box,
+  Map,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -30,6 +32,7 @@ import {
   type Trial,
 } from './lab';
 import { Notes } from './notes';
+import { SceneView } from './scene-view';
 
 export default function Home() {
   const [circuit, setCircuit] = useState<Circuit | null>(null),
@@ -40,6 +43,7 @@ export default function Home() {
     [message, setMessage] = useState('Connecting to the simulation…'),
     [error, setError] = useState(''),
     [heatmap, setHeatmap] = useState(false),
+    [show3d, setShow3d] = useState(true),
     [trial, setTrial] = useState<Trial | null>(null),
     [benchmark, setBenchmark] = useState<Benchmark | null>(null),
     [sessionId, setSessionId] = useState(''),
@@ -234,16 +238,31 @@ export default function Home() {
                   {names[frame?.cloth.fabric || settings.fabric]}
                 </span>
               </div>
-              <button
-                className={'view-toggle ' + (heatmap ? 'active' : '')}
-                onClick={() => setHeatmap(!heatmap)}
-              >
-                {heatmap ? 'Temperature map' : 'Wrinkle view'}{' '}
-                <Settings2 size={15} />
-              </button>
+              <div className="board-tools">
+                <button
+                  className="view-toggle"
+                  aria-pressed={show3d}
+                  onClick={() => setShow3d(!show3d)}
+                >
+                  {show3d ? <Map size={15} /> : <Box size={15} />}
+                  {show3d ? '2D map' : '3D scene'}
+                </button>
+                <button
+                  className={'view-toggle ' + (heatmap ? 'active' : '')}
+                  onClick={() => setHeatmap(!heatmap)}
+                  aria-pressed={heatmap}
+                >
+                  {heatmap ? 'Temperature map' : 'Wrinkle view'}{' '}
+                  <Settings2 size={15} />
+                </button>
+              </div>
             </div>
             <div className="board">
-              <ClothView frame={frame} heatmap={heatmap} />
+              {show3d ? (
+                <SceneView frame={frame} heatmap={heatmap} />
+              ) : (
+                <ClothView frame={frame} heatmap={heatmap} />
+              )}
               {!frame && (
                 <div className="board-loading">
                   {error
@@ -258,7 +277,9 @@ export default function Home() {
                 <span>
                   {frame?.controller === 'manual'
                     ? 'YOU ARE AT THE CONTROLS'
-                    : 'FROZEN CIRCUIT → MOTOR READOUT'}
+                    : show3d
+                      ? 'FLY ANIMATION IS ILLUSTRATIVE'
+                      : 'FROZEN CIRCUIT → MOTOR READOUT'}
                 </span>
               </div>
             </div>

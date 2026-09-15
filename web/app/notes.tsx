@@ -56,7 +56,10 @@ export function Notes({ circuit }: { circuit: Circuit | null }) {
             The cloth is a 40 × 40 height field with heuristic heat diffusion,
             flattening and scorch. It does not simulate folding, fabric
             mechanics, muscles or a fly body. Temperature thresholds are
-            fictional parameters, not garment-care advice.
+            fictional parameters, not garment-care advice. The 3D fly, wings and
+            leg poses are illustrative. The iron position, lifted/contact state,
+            garment shape, wrinkles, heat and scorch come from the same 2D
+            simulation; the fly is not a biomechanical model.
           </p>
           <p>
             Only the ridge readout is trained, using 420 artificial feature
