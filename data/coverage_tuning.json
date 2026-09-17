@@ -1,0 +1,72 @@
+{
+  "seed": 42,
+  "seconds": 12,
+  "fabric": "cotton",
+  "temperature": 170,
+  "weight_scale": 2,
+  "stimulus_hz": 150,
+  "cutoff": 5,
+  "selected": "near_fast",
+  "rows": [
+    {
+      "name": "faster",
+      "coverage_percent": 52.7027027027027,
+      "travel": 1.5170776724616382,
+      "smooth_percent": 38.01638614218222,
+      "scorch_percent": 0.0,
+      "max_temperature_c": 148.0607805457344,
+      "reward": 0.05507198312851392,
+      "motor_push_divisor_hz": 15,
+      "turn_gain_rad_s": 3,
+      "lookahead_board_widths": 0.45
+    },
+    {
+      "name": "faster_turn",
+      "coverage_percent": 46.4527027027027,
+      "travel": 1.4988969411290467,
+      "smooth_percent": 31.517311352663835,
+      "scorch_percent": 0.0,
+      "max_temperature_c": 147.86437600675484,
+      "reward": 0.028677490500772118,
+      "motor_push_divisor_hz": 15,
+      "turn_gain_rad_s": 5,
+      "lookahead_board_widths": 0.45
+    },
+    {
+      "name": "near",
+      "coverage_percent": 37.66891891891892,
+      "travel": 0.9693702452324139,
+      "smooth_percent": 28.92232466807365,
+      "scorch_percent": 0.0,
+      "max_temperature_c": 149.960965382883,
+      "reward": 0.07128139336811817,
+      "motor_push_divisor_hz": 25,
+      "turn_gain_rad_s": 3,
+      "lookahead_board_widths": 0.25
+    },
+    {
+      "name": "near_fast",
+      "coverage_percent": 57.0945945945946,
+      "travel": 1.5667953024445858,
+      "smooth_percent": 38.89857324004444,
+      "scorch_percent": 0.0,
+      "max_temperature_c": 147.90234063799772,
+      "reward": 0.05088274868173867,
+      "motor_push_divisor_hz": 15,
+      "turn_gain_rad_s": 3,
+      "lookahead_board_widths": 0.25
+    },
+    {
+      "name": "wider_turn",
+      "coverage_percent": 40.37162162162162,
+      "travel": 0.9346873797798726,
+      "smooth_percent": 31.32147764497091,
+      "scorch_percent": 0.0,
+      "max_temperature_c": 149.82858919520737,
+      "reward": 0.07146028319172146,
+      "motor_push_divisor_hz": 25,
+      "turn_gain_rad_s": 2,
+      "lookahead_board_widths": 0.45
+    }
+  ]
+}

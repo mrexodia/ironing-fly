@@ -7,12 +7,23 @@ export function Notes({ circuit }: { circuit: Circuit | null }) {
         <h2>What this experiment actually does</h2>
         <span className="tag">OPEN NOTEBOOK</span>
       </div>
-      <p>
-        A small, real BANC circuit acts as a frozen spiking reservoir.
-        Hand-designed wrinkle and heat features stimulate eight descending
-        neurons. A fitted linear readout turns 64 motor-neuron spike traces into
-        iron movement, pressure and steam. The fly did not learn to iron.
-      </p>
+      {circuit?.sampled ? (
+        <p>
+          The full eligible BANC graph simulates 121,992 neurons. A local 16 × 8
+          retina, contact and temperature stimulate annotated sensory and visual
+          populations. Named descending and motor activity controls the iron
+          through fixed equations. There is no target-patch selector, imitation
+          training or automatic forward motion. This model has not learned to
+          iron.
+        </p>
+      ) : (
+        <p>
+          A small, real BANC circuit acts as a frozen spiking reservoir.
+          Hand-designed wrinkle and heat features stimulate eight descending
+          neurons. A fitted linear readout turns 64 motor-neuron spike traces
+          into iron movement, pressure and steam. The fly did not learn to iron.
+        </p>
+      )}
       <div className="notes-grid">
         <details>
           <summary>
@@ -21,14 +32,17 @@ export function Notes({ circuit }: { circuit: Circuit | null }) {
           <p>{circuit?.provenance.selection}</p>
           <p>
             {circuit?.provenance.counts.edges.toLocaleString()} retained
-            connections, {circuit?.provenance.counts.synapses.toLocaleString()}{' '}
-            synapses. Root IDs stay as strings. The map shows the original
-            circuit&apos;s 100 strongest edges; positions are schematic,
-            including when a control is running.
+            connections before the runtime cutoff,{' '}
+            {circuit?.provenance.counts.synapses.toLocaleString()} synapses.
+            Root IDs stay as strings. The map shows the strongest 100 edges
+            within the displayed sample of the original wiring; positions are
+            schematic, including when a control is running.
           </p>
-          <a href="/api/circuit" target="_blank" rel="noreferrer">
-            Full circuit, IDs, file hashes and provenance ↗
-          </a>
+          <p>
+            Use Export for the current run’s settings, recorded IDs and source
+            hashes. Full mode records spikes only for the displayed sample; it
+            simulates all eligible cells.
+          </p>
         </details>
         <details>
           <summary>
@@ -44,8 +58,9 @@ export function Notes({ circuit }: { circuit: Circuit | null }) {
           </p>
           <p>
             No background drive by default. Spikes are filtered over 100 ms.
-            DNa01, DNa02, DNp01 and DNp09 receive deliberately assigned
-            engineered channels. This is not a validated sensory pathway.
+            {circuit?.sampled
+              ? 'Visual channels enter LC/LPC/LLPC/LPLC populations; contact enters SNta29 and heat enters annotated thermosensory cells. These are deliberately engineered inputs, not a validated sensory pathway. GPU float32 and CPU float64 runs need not have identical spikes.'
+              : 'DNa01, DNa02, DNp01 and DNp09 receive deliberately assigned engineered channels. This is not a validated sensory pathway.'}
           </p>
         </details>
         <details>
@@ -61,12 +76,27 @@ export function Notes({ circuit }: { circuit: Circuit | null }) {
             garment shape, wrinkles, heat and scorch come from the same 2D
             simulation; the fly is not a biomechanical model.
           </p>
-          <p>
-            Only the ridge readout is trained, using 420 artificial feature
-            probes with scripted targets. A 100 ms washout precedes each sample.
-            A validation split selects regularization; controls use separate
-            task seeds. No recurrent weights are learned.
-          </p>
+          {circuit?.sampled ? (
+            <p>
+              DNa02, DNp66 and DNp03 rates set yaw; DNp09 + DNp66 − MDN set
+              movement drive. The calibrated adapter also converts front-leg
+              motor activity to pushing and stronger pressure/steam. DNp01 lifts
+              the iron. Coverage push increases neural-driven pushing and
+              shortens visual lookahead from 0.45 to 0.25 board widths. Earlier
+              profiles remain available for comparison. These tool mappings and
+              their gains are assumptions, not natural ironing behavior. The
+              sensory populations were informed by CyberFly’s MaleCNS
+              experiments; their function is not thereby validated in this BANC
+              model.
+            </p>
+          ) : (
+            <p>
+              Only the ridge readout is trained, using 420 artificial feature
+              probes with scripted targets. A 100 ms washout precedes each
+              sample. A validation split selects regularization; controls use
+              separate task seeds. No recurrent weights are learned.
+            </p>
+          )}
         </details>
       </div>
       <div className="sources">

@@ -19,6 +19,7 @@ import Link from 'next/link';
 import {
   api,
   initial,
+  fabricTemperatures,
   names,
   Choice,
   Range,
@@ -33,6 +34,7 @@ import {
 } from './lab';
 import { Notes } from './notes';
 import { SceneView } from './scene-view';
+import { ConnectomePanel } from './connectome-panel';
 
 export default function Home() {
   const [circuit, setCircuit] = useState<Circuit | null>(null),
@@ -54,8 +56,24 @@ export default function Home() {
     keys = useRef(new Set<string>()),
     press = useRef(false),
     steam = useRef(false);
-  const change = (k: keyof Settings, v: string | number) => {
-    setSettings((s) => ({ ...s, [k]: v }));
+  const change = (k: keyof Settings, v: string | number | boolean) => {
+    setSettings((s) =>
+      k === 'engine'
+        ? {
+            ...s,
+            engine: String(v),
+            controller: 'real',
+            ablate_outputs: false,
+            weight_scale: v === 'full' ? 2 : 4,
+          }
+        : k === 'fabric' && s.engine === 'full'
+          ? {
+              ...s,
+              fabric: String(v),
+              temperature: fabricTemperatures[String(v)] || 170,
+            }
+          : { ...s, [k]: v },
+    );
     setDirty(true);
     setRunning(false);
     runningRef.current = false;
@@ -66,13 +84,22 @@ export default function Home() {
     const gen = ++generation.current;
     setBusy(true);
     setError('');
-    setMessage('Preparing circuit and fitting readout if needed…');
+    setMessage(
+      s.engine === 'full'
+        ? 'Loading the full eligible connectome…'
+        : 'Preparing circuit and fitting readout if needed…',
+    );
     try {
-      const result = await api<Frame & { id: string }>('session', s);
+      const result = await api<Frame & { id: string; circuit: Circuit }>(
+        'session',
+        s,
+      );
       if (gen !== generation.current) return;
       sid.current = result.id;
       setSessionId(result.id);
       setFrame(result);
+      setCircuit(result.circuit);
+      setTrial(null);
       setDirty(false);
       setMessage('Ready to iron');
     } catch (e) {
@@ -83,9 +110,6 @@ export default function Home() {
     }
   }
   useEffect(() => {
-    api<Circuit>('circuit')
-      .then(setCircuit)
-      .catch((e) => setError(String(e)));
     api<Benchmark>('benchmark')
       .then(setBenchmark)
       .catch(() => {});
@@ -222,7 +246,7 @@ export default function Home() {
             <h1>
               The laundry experiment<span>.</span>
             </h1>
-            <p>Real fly wiring. A trained readout. One virtual iron.</p>
+            <p>Real fly wiring. Local senses. One virtual iron.</p>
           </div>
           <a className="text-link" href="#assumptions">
             How this works <ArrowUpRight size={17} />
@@ -272,7 +296,10 @@ export default function Home() {
               )}
               <div className="board-caption">
                 <span>
-                  <i className="target-dot" /> Selected wrinkle patch
+                  <i className="target-dot" />{' '}
+                  {frame?.engine === 'full'
+                    ? 'Local vision · no target selector'
+                    : 'Selected wrinkle patch'}
                 </span>
                 <span>
                   {frame?.controller === 'manual'
@@ -312,7 +339,11 @@ export default function Home() {
                   {(metrics?.time || 0).toFixed(1)}
                   <small>s</small>
                 </strong>
-                <span className="metric-note">20 ms per control step</span>
+                <span className="metric-note">
+                  {frame?.engine === 'full'
+                    ? `${(metrics?.coverage_percent || 0).toFixed(1)}% of cloth pressed`
+                    : '20 ms per control step'}
+                </span>
               </div>
             </div>
             <div className="transport">
@@ -366,28 +397,54 @@ export default function Home() {
             </div>
             <div className="controls-body">
               <Choice
+                label="Neural model"
+                value={settings.engine}
+                values={['full', 'legacy']}
+                onChange={(v) => change('engine', v)}
+                disabled={busy}
+              />
+              <Choice
                 label="Controller"
                 value={settings.controller}
-                values={[
-                  'real',
-                  'shuffled',
-                  'zero',
-                  'random',
-                  'expert',
-                  'manual',
-                ]}
+                values={
+                  settings.engine === 'full'
+                    ? ['real', 'shuffled', 'zero']
+                    : ['real', 'shuffled', 'zero', 'random', 'expert', 'manual']
+                }
                 onChange={(v) => change('controller', v)}
                 disabled={busy}
               />
+              {settings.engine === 'full' && (
+                <Choice
+                  label="Control profile"
+                  value={String(settings.decoder_version)}
+                  values={['3', '2', '1']}
+                  onChange={(v) => change('decoder_version', Number(v))}
+                  disabled={busy}
+                />
+              )}
               <p className="control-note">
-                {settings.controller === 'real'
-                  ? 'Frozen BANC circuit + fitted linear motor readout.'
-                  : settings.controller === 'shuffled'
-                    ? 'Shuffled target partners; separately fitted readout.'
-                    : settings.controller === 'manual'
-                      ? 'Arrow keys move. Toggle pressure and steam below.'
-                      : 'Comparison controller. Neural activity is measured separately.'}
+                {settings.engine === 'full'
+                  ? 'All 121,992 eligible neurons. Fixed neural output adapter; no trained readout or target finder. Exploratory weight scale 2×.'
+                  : settings.controller === 'real'
+                    ? 'Frozen BANC circuit + fitted linear motor readout.'
+                    : settings.controller === 'shuffled'
+                      ? 'Shuffled target partners; separately fitted readout.'
+                      : settings.controller === 'manual'
+                        ? 'Arrow keys move. Toggle pressure and steam below.'
+                        : 'Comparison controller. Neural activity is measured separately.'}
               </p>
+              {settings.engine === 'full' && (
+                <label className="control-note ablation">
+                  <input
+                    type="checkbox"
+                    checked={settings.ablate_outputs}
+                    disabled={busy}
+                    onChange={(e) => change('ablate_outputs', e.target.checked)}
+                  />{' '}
+                  Silence decoded output neurons
+                </label>
+              )}
               <div className="pair">
                 <Choice
                   label="Garment"
@@ -527,6 +584,7 @@ export default function Home() {
             {error}
           </div>
         )}
+        {frame?.engine === 'full' && <ConnectomePanel frame={frame} />}
         <section className="neural-grid">
           <div className="raster-panel">
             <div className="panel-top">
@@ -535,22 +593,26 @@ export default function Home() {
                 LIVE NEURAL ACTIVITY
               </span>
               <span className="subtle">
-                {circuit?.nodes.length || '—'} neurons · last 1,000 ms
+                {circuit?.nodes.length || '—'}{' '}
+                {circuit?.sampled ? 'sampled neurons' : 'neurons'} · last 1,000
+                ms
               </span>
             </div>
             <Raster frame={frame} circuit={circuit} />
             <div className="raster-legend">
               <span>
                 <i style={{ background: '#d3f087' }} />
-                Descending inputs
+                {circuit?.sampled
+                  ? 'Sensory / visual cells'
+                  : 'Descending inputs'}
               </span>
               <span>
                 <i style={{ background: '#5d8b74' }} />
-                VNC intermediates
+                {circuit?.sampled ? 'Other sampled cells' : 'VNC intermediates'}
               </span>
               <span>
                 <i style={{ background: '#a5d9e8' }} />
-                Motor outputs
+                Motor / descending outputs
               </span>
               <span className="raster-time">
                 {(frame?.neural.time_ms || 0).toFixed(0)} ms
@@ -564,115 +626,129 @@ export default function Home() {
             </div>
             <Network circuit={circuit} frame={frame} />
             <div className="circuit-labels">
-              <span>8 inputs</span>
-              <span>160 VNC</span>
-              <span>64 motors</span>
+              <span>{circuit?.inputs.length} inputs</span>
+              <span>
+                {circuit
+                  ? circuit.nodes.length -
+                    circuit.inputs.length -
+                    circuit.motors.length
+                  : '—'}{' '}
+                others
+              </span>
+              <span>{circuit?.motors.length} outputs</span>
             </div>
           </div>
         </section>
-        <section className="results-grid">
-          <div>
-            <div className="section-heading">
-              <h2>Does the wiring help?</h2>
-              <span className="tag">CONTROL EXPERIMENT</span>
-            </div>
-            <p className="section-copy">
-              Same fabric, three held-out seeds, 12 seconds per run. Readouts
-              fitted separately. These results use default settings and a
-              T-shirt.
-            </p>
-            {selectedControls.length ? (
-              <>
-                <div className="comparison">
-                  {summary.map((row) => (
-                    <div key={row.controller} className="comparison-row">
-                      <span>{names[row.controller]}</span>
-                      <div className="comparison-track">
-                        <i
-                          style={{
-                            width: `${row.smooth}%`,
-                            background:
-                              row.controller === 'real' ? '#d3f087' : '#6e8d79',
-                          }}
-                        />
-                      </div>
-                      <strong>{row.smooth.toFixed(1)}%</strong>
-                      <small>{row.scorch.toFixed(2)}% scorch</small>
-                    </div>
-                  ))}
-                </div>
-                <p className="control-note">
-                  Mean wrinkles removed; longer bars are better. A small
-                  difference does not establish an advantage from biological
-                  wiring.
-                </p>
-              </>
-            ) : (
-              <p className="empty">
-                The reproducible comparison is being prepared. Live experiments
-                are available above.
-              </p>
-            )}
-          </div>
-          <div>
-            <div className="section-heading">
-              <h2>Motor response</h2>
-              <span className="tag">FILTERED SPIKES</span>
-            </div>
-            <div className="motor-list">
-              {topMotors.map((i) => (
-                <div key={i}>
-                  <span title={circuit!.nodes[i].id}>
-                    {circuit!.nodes[i].cell_type}
-                    <small>
-                      {circuit!.nodes[i].side} ·{' '}
-                      {circuit!.nodes[i].body_part_effector ||
-                        'identified motor'}
-                    </small>
-                  </span>
-                  <strong>
-                    {(frame?.neural.rates[i] || 0).toFixed(1)} <small>Hz</small>
-                  </strong>
-                </div>
-              ))}
-            </div>
-            <Button
-              variant="outline"
-              className="trial-button"
-              onClick={runTrial}
-              disabled={busy || running}
-            >
-              <FlaskConical size={16} />
-              Compare DNa02 with baseline
-            </Button>
-            {trial && (
-              <div className="trial-result">
-                <strong>DNa02 · {trial.stimulated.stimulus_hz} Hz input</strong>
-                <span>
-                  Mean motor firing:{' '}
-                  {trial.baseline.diagnostics.motor_mean_hz.toFixed(2)} →{' '}
-                  {trial.stimulated.diagnostics.motor_mean_hz.toFixed(2)} Hz
-                </span>
-                <button
-                  onClick={() => {
-                    const url = URL.createObjectURL(
-                      new Blob([JSON.stringify(trial, null, 2)], {
-                        type: 'application/json',
-                      }),
-                    );
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'dna02-trial.json';
-                    a.click();
-                    setTimeout(() => URL.revokeObjectURL(url), 1000);
-                  }}
-                >
-                  Download trial and spike times <Download size={14} />
-                </button>
+        {frame?.engine !== 'full' && (
+          <section className="results-grid">
+            <div>
+              <div className="section-heading">
+                <h2>Does the wiring help?</h2>
+                <span className="tag">CONTROL EXPERIMENT</span>
               </div>
-            )}
-          </div>
-        </section>
+              <p className="section-copy">
+                Same fabric, three held-out seeds, 12 seconds per run. Readouts
+                fitted separately. These results use default settings and a
+                T-shirt.
+              </p>
+              {selectedControls.length ? (
+                <>
+                  <div className="comparison">
+                    {summary.map((row) => (
+                      <div key={row.controller} className="comparison-row">
+                        <span>{names[row.controller]}</span>
+                        <div className="comparison-track">
+                          <i
+                            style={{
+                              width: `${row.smooth}%`,
+                              background:
+                                row.controller === 'real'
+                                  ? '#d3f087'
+                                  : '#6e8d79',
+                            }}
+                          />
+                        </div>
+                        <strong>{row.smooth.toFixed(1)}%</strong>
+                        <small>{row.scorch.toFixed(2)}% scorch</small>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="control-note">
+                    Mean wrinkles removed; longer bars are better. A small
+                    difference does not establish an advantage from biological
+                    wiring.
+                  </p>
+                </>
+              ) : (
+                <p className="empty">
+                  The reproducible comparison is being prepared. Live
+                  experiments are available above.
+                </p>
+              )}
+            </div>
+            <div>
+              <div className="section-heading">
+                <h2>Motor response</h2>
+                <span className="tag">FILTERED SPIKES</span>
+              </div>
+              <div className="motor-list">
+                {topMotors.map((i) => (
+                  <div key={i}>
+                    <span title={circuit!.nodes[i].id}>
+                      {circuit!.nodes[i].cell_type}
+                      <small>
+                        {circuit!.nodes[i].side} ·{' '}
+                        {circuit!.nodes[i].body_part_effector ||
+                          'identified motor'}
+                      </small>
+                    </span>
+                    <strong>
+                      {(frame?.neural.rates[i] || 0).toFixed(1)}{' '}
+                      <small>Hz</small>
+                    </strong>
+                  </div>
+                ))}
+              </div>
+              <Button
+                variant="outline"
+                className="trial-button"
+                onClick={runTrial}
+                disabled={busy || running}
+              >
+                <FlaskConical size={16} />
+                Compare DNa02 with baseline
+              </Button>
+              {trial && (
+                <div className="trial-result">
+                  <strong>
+                    DNa02 · {trial.stimulated.stimulus_hz} Hz input
+                  </strong>
+                  <span>
+                    Mean motor firing:{' '}
+                    {trial.baseline.diagnostics.motor_mean_hz.toFixed(2)} →{' '}
+                    {trial.stimulated.diagnostics.motor_mean_hz.toFixed(2)} Hz
+                  </span>
+                  <button
+                    onClick={() => {
+                      const url = URL.createObjectURL(
+                        new Blob([JSON.stringify(trial, null, 2)], {
+                          type: 'application/json',
+                        }),
+                      );
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'dna02-trial.json';
+                      a.click();
+                      setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    }}
+                  >
+                    Download trial and spike times <Download size={14} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
         <Notes circuit={circuit} />
         <footer>
           <span>

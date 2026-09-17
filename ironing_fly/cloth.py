@@ -12,7 +12,7 @@ FABRICS = {
 }
 
 class Cloth:
-    def __init__(self, seed=42, fabric='cotton', garment='shirt', temperature=170):
+    def __init__(self, seed=42, fabric='cotton', garment='shirt', temperature=170, select_target=True):
         self.seed, self.fabric, self.garment = seed, fabric, garment
         self.iron_temperature = temperature
         self.n = 40
@@ -36,9 +36,12 @@ class Cloth:
         self.heat = np.full_like(x, 22.)
         self.scorch = np.zeros_like(x)
         self.position = np.array([.5, .5])
+        self.pressed = np.zeros_like(self.mask)
+        self.travel = 0.
         self.pressure, self.steam, self.time, self.reward = 0., 0., 0., 0.
         self.target = np.array([.5, .5])
-        self.choose_target()
+        if select_target:
+            self.choose_target()
 
     def choose_target(self):
         # Explicit engineered observation: locate an unflattened patch, with a
@@ -67,8 +70,11 @@ class Cloth:
             raise ValueError('Expected four finite actions')
         vx, vy = np.clip(action[:2], -1, 1)
         self.pressure, self.steam = np.clip(action[2:], 0, 1)
+        previous_position = self.position.copy()
         self.position = np.clip(self.position + np.array([vx, vy]) * .30 * dt, .04, .96)
+        self.travel += float(np.linalg.norm(self.position - previous_position))
         contact = (((self.x - self.position[0]) / .075) ** 2 + ((self.y - self.position[1]) / .105) ** 2 < 1) & self.mask
+        self.pressed |= contact & (self.pressure > .1)
         material = FABRICS[self.fabric]
         # No wrap-around diffusion at garment boundaries.
         flux = np.zeros_like(self.heat)
@@ -91,7 +97,9 @@ class Cloth:
         self.time += dt
 
     def metrics(self):
-        return {'smooth_percent': float(100 * (1 - self.wrinkle.sum() / self.initial)),
+        return {'coverage_percent': float(100 * self.pressed.sum() / self.mask.sum()),
+                'travel': self.travel,
+                'smooth_percent': float(100 * (1 - self.wrinkle.sum() / self.initial)),
                 'scorch_percent': float(100 * self.scorch.sum() / self.mask.sum()),
                 'max_temperature_c': float(self.heat.max()), 'reward': self.reward}
 

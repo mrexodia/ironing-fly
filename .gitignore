@@ -2,6 +2,7 @@
 __pycache__/
 .pytest_cache/
 data/raw/
+data/full_banc/
 data/models/
 outputs/
 web/node_modules/

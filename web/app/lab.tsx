@@ -16,16 +16,32 @@ export type Neuron = {
   body_part_effector: string;
 };
 export type Circuit = {
+  sampled?: boolean;
   nodes: Neuron[];
   edges: number[][];
   inputs: number[];
   motors: number[];
   provenance: {
     selection: string;
-    counts: { edges: number; synapses: number };
+    counts: { neurons?: number; edges: number; synapses: number };
   };
 };
 export type Frame = {
+  engine?: string;
+  model?: {
+    neurons: number;
+    edges: number;
+    display_neurons: number;
+    decoder_version: number;
+  };
+  senses?: {
+    lookahead_board_widths?: number;
+    retina: number[];
+    channels_hz: Record<string, number>;
+    local_temperature_c: number;
+    contact: number;
+  };
+  populations_hz?: Record<string, number>;
   cloth: {
     time: number;
     fabric: string;
@@ -37,16 +53,28 @@ export type Frame = {
     scorch: number[];
     iron: number[];
     target: number[];
+    target_visible?: boolean;
     pressure: number;
     steam: number;
     smooth_percent: number;
     scorch_percent: number;
+    coverage_percent: number;
+    travel: number;
   };
   neural: {
     time_ms: number;
     spikes: number[][];
     rates: number[];
-    diagnostics: { motor_mean_hz: number; silent: boolean; high_rate: boolean };
+    diagnostics: {
+      motor_mean_hz: number;
+      silent: boolean;
+      high_rate: boolean;
+      backend?: string;
+      device?: string;
+      backend_note?: string;
+      sim_seconds_per_wall_second?: number;
+      network_spikes?: number;
+    };
   };
   controller: string;
   action: number[];
@@ -64,6 +92,9 @@ export type Trial = {
   stimulated: { stimulus_hz: number; diagnostics: { motor_mean_hz: number } };
 };
 export type Settings = {
+  decoder_version: number;
+  engine: string;
+  ablate_outputs: boolean;
   seed: number;
   fabric: string;
   garment: string;
@@ -75,17 +106,31 @@ export type Settings = {
   background_hz: number;
 };
 export const initial: Settings = {
+  decoder_version: 3,
+  engine: 'full',
+  ablate_outputs: false,
   seed: 42,
   fabric: 'cotton',
   garment: 'shirt',
   temperature: 170,
   controller: 'real',
   stimulus_hz: 150,
-  weight_scale: 4,
+  weight_scale: 2,
   cutoff: 5,
   background_hz: 0,
 };
+export const fabricTemperatures: Record<string, number> = {
+  cotton: 170,
+  silk: 110,
+  wool: 150,
+};
 export const names: Record<string, string> = {
+  '3': 'Coverage push',
+  '2': 'Calibrated push',
+  '1': 'Original adapter',
+  before: 'Original adapter',
+  full: 'Full eligible connectome',
+  legacy: '232-neuron readout demo',
   real: 'Fly connectome',
   shuffled: 'Shuffled wiring',
   zero: 'Zero connections',
@@ -289,17 +334,19 @@ export function ClothView({
     c.arc(0, 39, 4, 0, Math.PI * 2);
     c.fill();
     c.restore();
-    c.strokeStyle = '#d3f087';
-    c.lineWidth = 1.5;
-    const tx = ox + s.target[0] * size,
-      ty = oy + s.target[1] * size;
-    c.beginPath();
-    c.arc(tx, ty, 8, 0, Math.PI * 2);
-    c.moveTo(tx - 14, ty);
-    c.lineTo(tx + 14, ty);
-    c.moveTo(tx, ty - 14);
-    c.lineTo(tx, ty + 14);
-    c.stroke();
+    if (s.target_visible !== false) {
+      c.strokeStyle = '#d3f087';
+      c.lineWidth = 1.5;
+      const tx = ox + s.target[0] * size,
+        ty = oy + s.target[1] * size;
+      c.beginPath();
+      c.arc(tx, ty, 8, 0, Math.PI * 2);
+      c.moveTo(tx - 14, ty);
+      c.lineTo(tx + 14, ty);
+      c.moveTo(tx, ty - 14);
+      c.lineTo(tx, ty + 14);
+      c.stroke();
+    }
     c.fillStyle = '#a0ada4';
     c.font = '13px monospace';
     c.fillText('01 / NEAR-FLAT GARMENT MODEL', 24, 32);
@@ -309,7 +356,7 @@ export function ClothView({
     <canvas
       ref={ref}
       className="cloth-canvas"
-      aria-label="Live cloth: dark folds are wrinkles, ellipse is iron contact, cross is selected wrinkle patch."
+      aria-label="Live cloth: dark folds are wrinkles, ellipse is iron contact."
     />
   );
 }
@@ -352,7 +399,7 @@ export function Raster({
     <canvas
       ref={ref}
       className="raster"
-      aria-label="Measured spikes over the last second: yellow descending, green intermediate, blue motor."
+      aria-label="Measured spikes over the last second: yellow inputs, green other cells, blue outputs."
     />
   );
 }
@@ -366,14 +413,22 @@ export function Network({
   if (!circuit) return null;
   const cols = [
     circuit.inputs,
-    Array.from({ length: 160 }, (_, i) => i + 8),
+    circuit.nodes
+      .map((_, i) => i)
+      .filter(
+        (i) => !circuit.inputs.includes(i) && !circuit.motors.includes(i),
+      ),
     circuit.motors,
   ];
   const pos = (i: number) => {
-    const col = i < 8 ? 0 : i < 168 ? 1 : 2;
+    const col = circuit.inputs.includes(i)
+      ? 0
+      : circuit.motors.includes(i)
+        ? 2
+        : 1;
     return [
       35 + col * 125,
-      12 + (cols[col].indexOf(i) / (cols[col].length - 1)) * 150,
+      12 + (cols[col].indexOf(i) / Math.max(1, cols[col].length - 1)) * 150,
     ];
   };
   // SVG is the semantic graphic itself; wrapping it in img would remove tooltips.
@@ -412,8 +467,14 @@ export function Network({
             key={n.id}
             cx={x}
             cy={y}
-            r={i < 8 ? 3 : r > 5 ? 2 : 1}
-            fill={i < 8 ? '#d3f087' : i >= 168 ? '#a5d9e8' : '#6a9c7f'}
+            r={r > 5 ? 2 : 1}
+            fill={
+              circuit.inputs.includes(i)
+                ? '#d3f087'
+                : circuit.motors.includes(i)
+                  ? '#a5d9e8'
+                  : '#6a9c7f'
+            }
             opacity={r > 5 ? 1 : 0.4}
           >
             <title>

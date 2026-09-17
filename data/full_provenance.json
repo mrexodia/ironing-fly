@@ -1,0 +1,72 @@
+{
+  "dataset": "BANC",
+  "materialization": 888,
+  "connectivity_version": "simple_v3",
+  "builder_version": 2,
+  "files": [
+    {
+      "name": "banc_888_meta.feather",
+      "url": "https://storage.googleapis.com/lee-lab_brain-and-nerve-cord-fly-connectome/compiled_data/banc_888/banc_888_meta.feather",
+      "sha256": "86ccf5df0c67419f8c5f43e93a7ed38d23a080e9f7fde26737290252f3780098",
+      "bytes": 57503026
+    },
+    {
+      "name": "banc_888_edgelist_simple_v3.feather",
+      "url": "https://storage.googleapis.com/lee-lab_brain-and-nerve-cord-fly-connectome/compiled_data/banc_888/banc_888_edgelist_simple_v3.feather",
+      "sha256": "8c296e946f3c69a8c7222f30ad75fa8a98eeb189124fec6df829c9125f4be64b",
+      "bytes": 359161658
+    }
+  ],
+  "counts": {
+    "neurons": 121992,
+    "edges": 10293444,
+    "synapses": 32758013
+  },
+  "metadata_rows": 188508,
+  "selection": "All proofread neurons with an annotated neuronal superclass; exclude glia, trachea, not_a_neuron, unrooted, too-small and unresolved tracing issues. No task-based node pruning. All induced positive-count edges retained before runtime threshold. This is the full eligible graph, not every reconstructed cell.",
+  "group_counts": {
+    "LC11_left": 64,
+    "LC11_right": 74,
+    "LC4_left": 50,
+    "LC4_right": 63,
+    "LPLC1_left": 49,
+    "LPLC1_right": 66,
+    "LPLC2_left": 83,
+    "LPLC2_right": 87,
+    "LLPC1_left": 99,
+    "LLPC1_right": 125,
+    "LC12_left": 200,
+    "LC12_right": 224,
+    "LPC1_left": 97,
+    "LPC1_right": 115,
+    "LC10a_left": 87,
+    "LC10a_right": 129,
+    "LC10d_left": 75,
+    "LC10d_right": 96,
+    "DNa02_left": 1,
+    "DNa02_right": 1,
+    "DNp09_left": 1,
+    "DNp09_right": 1,
+    "DNp01_left": 1,
+    "DNp01_right": 1,
+    "MDN_left": 2,
+    "MDN_right": 2,
+    "DNp66_left": 1,
+    "DNp66_right": 1,
+    "DNp03_left": 1,
+    "DNp03_right": 1,
+    "contact_left": 139,
+    "thermal_left": 16,
+    "front_motor_left": 65,
+    "contact_right": 169,
+    "thermal_right": 14,
+    "front_motor_right": 68,
+    "display": 573
+  },
+  "unknown_or_modulatory_sign_neurons": 14246,
+  "id_policy": "String root IDs, int32 local indices; no float ID conversion.",
+  "sources": [
+    "https://github.com/sjcabs/fly_connectome_data_tutorial/blob/main/data/dataset_documentation/banc_data.md",
+    "https://www.nature.com/articles/s41586-026-10735-w"
+  ]
+}

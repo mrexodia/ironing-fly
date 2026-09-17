@@ -1,3 +1,7 @@
+# Full-connectome update
+
+The following report covers the original 232-neuron demo. The current default is the larger connectome mode; its separate methods, limitations and causal-control results are in [full-connectome control](full-connectome.md).
+
 # First experiment report
 
 ## Circuit and configuration

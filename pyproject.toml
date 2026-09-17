@@ -13,6 +13,11 @@ dependencies = [
     "uvicorn>=0.53.0",
 ]
 
+[project.optional-dependencies]
+gpu = [
+    "cupy-cuda12x[ctk]>=14.2.0",
+]
+
 [dependency-groups]
 dev = [
     "httpx>=0.28.1",

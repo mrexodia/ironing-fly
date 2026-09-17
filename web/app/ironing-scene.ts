@@ -462,6 +462,7 @@ export function createIroningScene(
       snapped = true;
     }
     lastTime = s.time;
+    marker.visible = s.target_visible !== false;
     marker.position.set(
       (s.target[0] - 0.5) * WIDTH,
       CLOTH_Y + 0.16,

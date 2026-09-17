@@ -1,3 +1,7 @@
+# Full-connectome update
+
+The current default has progressed beyond the original 232-cell implementation described below. See [full-connectome control](full-connectome.md) for the 121,992-neuron graph, local senses, fixed decoder, CUDA backend and control results. The earlier demo remains selectable.
+
 # Implementation decisions
 
 ## Deliver the BANC starting experiment and an ironing loop

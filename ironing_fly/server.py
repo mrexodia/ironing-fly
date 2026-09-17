@@ -17,6 +17,10 @@ lock = RLock()
 
 class Settings(BaseModel):
     model_config = ConfigDict(extra='forbid', allow_inf_nan=False)
+    engine: Literal['legacy', 'full'] = 'legacy'
+    backend: Literal['auto', 'cpu', 'cuda'] = 'auto'
+    ablate_outputs: bool = False
+    decoder_version: Literal[1,2,3] = 3
     seed: int = Field(42, ge=0, le=1000000)
     fabric: Literal['cotton', 'silk', 'wool'] = 'cotton'
     garment: Literal['shirt', 'trousers', 'patch'] = 'shirt'
@@ -33,10 +37,22 @@ class Step(BaseModel):
     manual: list[float] | None = Field(None, min_length=4, max_length=4)
 
 def neural(settings):
-    return NeuralConfig(**{f.name: getattr(settings, f.name) for f in fields(NeuralConfig) if hasattr(settings, f.name)})
+    config = NeuralConfig(**{f.name: getattr(settings, f.name) for f in fields(NeuralConfig) if hasattr(settings, f.name)})
+    if settings.engine == 'full' and 'weight_scale' not in settings.model_fields_set:
+        config.weight_scale = 2
+    return config
+
+@app.get('/api/full-benchmark')
+def full_benchmark():
+    path = ROOT / 'data' / 'coverage_improvement.json'
+    return FileResponse(path) if path.exists() else {'rows': []}
 
 @app.get('/api/circuit')
-def get_circuit():
+def get_circuit(engine: Literal['legacy','full'] = 'legacy'):
+    if engine == 'full':
+        from .connectome import load_full, display_circuit
+        with lock:
+            return display_circuit(load_full())
     return circuit
 
 @app.get('/api/health')
@@ -46,12 +62,26 @@ def health():
 @app.post('/api/session')
 def create(settings: Settings):
     with lock:
+        if settings.engine == 'full' and settings.controller not in ['real','shuffled','zero']:
+            raise HTTPException(422, 'Full connectome supports real, shuffled and zero wiring.')
+        if settings.engine == 'full' and settings.background_hz:
+            raise HTTPException(422, 'Full mode uses zero background drive for reproducible sensory input streams.')
         if len(sessions) >= 16:
             sessions.pop(next(iter(sessions)))
-        session = Session(circuit, neural(settings), settings.seed, settings.fabric, settings.garment, settings.temperature, settings.controller)
+        if settings.engine == 'full':
+            from .full_session import FullSession
+            try:
+                temperature = settings.temperature if 'temperature' in settings.model_fields_set else {'cotton':170,'silk':110,'wool':150}[settings.fabric]
+                session = FullSession(neural(settings), settings.seed, settings.fabric, settings.garment, temperature, settings.controller, settings.backend, settings.ablate_outputs, settings.decoder_version)
+            except (RuntimeError, ValueError) as error:
+                raise HTTPException(503, str(error)) from error
+            display = session.display
+        else:
+            session = Session(circuit, neural(settings), settings.seed, settings.fabric, settings.garment, settings.temperature, settings.controller)
+            display = circuit
         sid = uuid.uuid4().hex
         sessions[sid] = session
-        return {'id': sid, **session.snapshot()}
+        return {'id': sid, 'circuit': display, **session.snapshot()}
 
 def get_session(sid):
     if sid not in sessions:
@@ -74,6 +104,8 @@ def export(sid: str):
 
 @app.post('/api/neural-trial')
 def trial(settings: Settings):
+    if settings.engine == 'full':
+        raise HTTPException(422, 'This fitted-readout probe belongs to the 232-neuron demo. Use full-mode wiring and output-ablation controls instead.')
     config = neural(settings)
     return {'baseline': neural_trial(circuit, config, 0, settings.seed), 'stimulated': neural_trial(circuit, config, settings.stimulus_hz, settings.seed),
             'motor_ids': [circuit['nodes'][i]['id'] for i in circuit['motors']], 'settings': config.__dict__}
