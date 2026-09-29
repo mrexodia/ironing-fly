@@ -1,5 +1,7 @@
 # Ironing Fly
 
+<img width="1055" height="620" alt="image" src="https://github.com/user-attachments/assets/5f40811f-3f03-45f3-9def-d9fccaea5fab" />
+
 A cute 3D fly operates a virtual iron using a **121,992-neuron BANC v888 connectome simulation**. Local visual, contact and temperature inputs stimulate annotated populations. Fixed neural output equations drive the iron; the new default mode has **no global wrinkle-target finder, trained readout or automatic forward motion**. The earlier 232-neuron trained-readout demo remains selectable.
 
 This uses the full **eligible, proofread female BANC graph**, not every reconstruction and not the MaleCNS dataset used by CyberFly. Connectivity is anatomical; physiology, sensory encoding and the neural-to-tool adapter are assumed. The cloth remains a nearly flat 2D toy beneath the 3D scene. The fly has not learned to iron. The default Coverage push profile combines leg-motor-driven pushing with a shorter local visual lookahead. The earlier profiles remain selectable. See [full-connectome model and results](docs/full-connectome.md).
